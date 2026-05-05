@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>类风湿虚拟病人</title>
+  <link rel="stylesheet" href="./styles.css?v=tencent-verify">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="类风湿虚拟病人">
+        <div class="brand-copy">
+          <h1>AI-XR 问诊训练</h1>
+          <div id="statusText" class="status">正在加载病例...</div>
+        </div>
+      </div>
+
+      <div class="session-banner" aria-hidden="true">
+        <strong>模拟病人沟通练习</strong>
+        <span>按病例线索完成问诊</span>
+      </div>
+
+      <div class="top-actions">
+        <select id="patientSelect" class="patient-select" aria-label="选择病人"></select>
+        <button id="caseToggle" class="button primary" type="button">病例填写</button>
+        <button id="endSessionButton" class="button danger" type="button">结束练习</button>
+        <button id="settingsToggle" class="icon-button" type="button" aria-label="配置" title="配置">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section id="settingsPanel" class="settings-panel" hidden>
+      <div class="panel-title">
+        <div>
+          <h2>云服务配置</h2>
+          <span id="cloudStatus">正在读取本地后端配置</span>
+        </div>
+        <button id="settingsClose" class="icon-button panel-close" type="button" aria-label="关闭配置" title="关闭配置">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18"></path>
+          </svg>
+        </button>
+      </div>
+      <div id="verifyStatus" class="verify-status">填写腾讯云信息后，点击保存或验证连接。</div>
+      <div class="settings-grid">
+        <label>
+          腾讯云 AppID
+          <input id="tencentAppId" autocomplete="off" placeholder="例如：1250000000">
+        </label>
+        <label>
+          SecretId
+          <input id="tencentSecretId" autocomplete="off">
+        </label>
+        <label>
+          SecretKey
+          <input id="tencentSecretKey" type="password" autocomplete="off" placeholder="留空表示不覆盖已保存密钥">
+        </label>
+        <details class="advanced-settings">
+          <summary>高级参数</summary>
+          <div class="settings-grid nested">
+            <label>
+              Region
+              <input id="tencentRegion" autocomplete="off" placeholder="ap-shanghai">
+            </label>
+            <label>
+              ASR EngineType
+              <input id="tencentAsrEngineType" autocomplete="off" placeholder="16k_zh">
+            </label>
+            <label>
+              ASR HotwordId
+              <input id="tencentAsrHotwordId" autocomplete="off" placeholder="可选">
+            </label>
+            <label>
+              TTS VoiceType
+              <input id="tencentTtsVoiceType" type="number" autocomplete="off" placeholder="1001">
+            </label>
+            <label>
+              TTS Codec
+              <select id="tencentTtsCodec">
+                <option value="wav">wav</option>
+                <option value="mp3">mp3</option>
+              </select>
+            </label>
+            <label>
+              TTS SampleRate
+              <input id="tencentTtsSampleRate" type="number" autocomplete="off" placeholder="16000">
+            </label>
+            <label>
+              TTS Speed
+              <input id="tencentTtsSpeed" type="number" step="0.1" min="-2" max="2" placeholder="0">
+            </label>
+            <label>
+              TTS Volume
+              <input id="tencentTtsVolume" type="number" step="0.5" min="-10" max="10" placeholder="0">
+            </label>
+          </div>
+        </details>
+        <details class="advanced-settings">
+          <summary>大模型参数</summary>
+          <div class="settings-grid nested">
+          <label>
+            调用方式
+            <select id="llmMode">
+            <option value="direct">直接调用 OpenAI 兼容接口</option>
+            <option value="proxy">调用后端代理/云函数</option>
+          </select>
+        </label>
+        <label>
+          Base URL
+          <input id="llmBaseUrl" autocomplete="off" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1">
+        </label>
+        <label>
+          Model
+          <input id="llmModel" autocomplete="off" placeholder="qwen-plus">
+        </label>
+        <label>
+          API Key
+          <input id="llmApiKey" type="password" autocomplete="off">
+        </label>
+        <label>
+          代理地址
+          <input id="llmProxyUrl" autocomplete="off" placeholder="https://example.com/api/chat">
+        </label>
+        <label>
+          Temperature
+          <input id="llmTemperature" type="number" step="0.05" min="0" max="2">
+        </label>
+          </div>
+        </details>
+      </div>
+      <div class="settings-actions">
+        <label class="checkline">
+          <input id="useLlm" type="checkbox">
+          <span>启用大模型回答</span>
+        </label>
+        <label class="checkline">
+          <input id="autoSpeak" type="checkbox">
+          <span>自动朗读回复</span>
+        </label>
+        <button id="saveSettings" class="button primary" type="button">保存</button>
+        <button id="verifyTencent" class="button secondary" type="button">验证腾讯云连接</button>
+      </div>
+    </section>
+
+    <main class="simulation">
+      <section class="patient-stage" aria-label="虚拟病人舞台">
+        <div class="patient-brief">
+          <span id="patientBadge">虚拟病人</span>
+          <strong id="patientMetaBrief">问诊准备中</strong>
+          <em id="patientChiefBrief">请根据病人回答继续追问</em>
+        </div>
+
+        <div id="avatarStage" class="avatar-stage">
+          <div class="patient-shadow"></div>
+          <div class="patient-body">
+            <div class="coat left"></div>
+            <div class="coat right"></div>
+            <div class="shirt"></div>
+            <div class="neck"></div>
+            <div class="head">
+              <div class="hair"></div>
+              <div class="ear left"></div>
+              <div class="ear right"></div>
+              <div class="brow left"></div>
+              <div class="brow right"></div>
+              <div class="eye left"></div>
+              <div class="eye right"></div>
+              <div class="nose"></div>
+              <div class="mouth"></div>
+            </div>
+            <div class="arm left"></div>
+            <div class="arm right"></div>
+            <div class="hand left"></div>
+            <div class="hand right"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="conversation-panel" aria-label="对话记录">
+        <div class="conversation-header">
+          <h2>对话记录</h2>
+        </div>
+        <div id="chatLog" class="chat-log" aria-live="polite"></div>
+      </aside>
+
+      <form class="composer" aria-label="输入问题">
+        <textarea id="questionInput" rows="1" placeholder="请输入您的问题..."></textarea>
+        <div class="composer-actions">
+          <button id="speakLastButton" class="round-button neutral" type="button" aria-label="朗读上条回复" title="朗读上条回复">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 10v4h4l5 4V6L8 10H4z"></path>
+              <path d="M16 9c1 1 1 5 0 6M18.5 6.5c2.5 2.5 2.5 8.5 0 11"></path>
+            </svg>
+          </button>
+          <button id="voiceButton" class="round-button" type="button" aria-label="语音输入" title="语音输入">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V7a3 3 0 0 0-3-3z"></path>
+              <path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path>
+            </svg>
+          </button>
+          <button id="sendButton" class="round-button" type="button" aria-label="发送" title="发送">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 11.5 20 4l-7.5 16-2-6-6.5-2.5z"></path>
+              <path d="m10.5 14 3.5-3.5"></path>
+            </svg>
+          </button>
+        </div>
+      </form>
+
+      <div id="caseBackdrop" class="drawer-backdrop" hidden></div>
+      <aside id="caseDrawer" class="case-drawer" aria-label="病例填写" hidden>
+        <div class="case-drawer-header">
+          <h2>病例填写</h2>
+          <button id="caseClose" class="icon-button" type="button" aria-label="关闭病例" title="关闭">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18"></path>
+            </svg>
+          </button>
+        </div>
+        <section id="patientSummary" class="patient-summary"></section>
+        <section id="caseDetails" class="case-details"></section>
+      </aside>
+
+      <div class="assistant-chip" aria-hidden="true">
+        <span class="assistant-face"></span>
+        <strong>小助手</strong>
+      </div>
+    </main>
+  </div>
+
+  <script src="./js/patientEngine.js?v=tencent-verify"></script>
+  <script src="./js/app.js?v=tencent-verify"></script>
+</body>
+</html>
