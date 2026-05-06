@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>类风湿虚拟病人</title>
-  <link rel="stylesheet" href="./styles.css?v=tencent-verify">
+  <link rel="stylesheet" href="./styles.css?v=scf-proxy">
 </head>
 <body>
   <div class="app-shell">
@@ -47,6 +47,10 @@
       </div>
       <div id="verifyStatus" class="verify-status">填写腾讯云信息后，点击保存或验证连接。</div>
       <div class="settings-grid">
+        <label>
+          云函数代理地址
+          <input id="scfProxyUrl" autocomplete="off" placeholder="https://xxxxx.ap-nanjing.tencentscf.com">
+        </label>
         <label>
           腾讯云 AppID
           <input id="tencentAppId" autocomplete="off" placeholder="例如：1250000000">
@@ -123,7 +127,7 @@
         </label>
         <label>
           代理地址
-          <input id="llmProxyUrl" autocomplete="off" placeholder="https://example.com/api/chat">
+          <input id="llmProxyUrl" autocomplete="off" placeholder="可留空，默认使用上方云函数代理地址">
         </label>
         <label>
           Temperature
@@ -232,7 +236,7 @@
     </main>
   </div>
 
-  <script src="./js/patientEngine.js?v=tencent-verify"></script>
-  <script src="./js/app.js?v=tencent-verify"></script>
+  <script src="./js/patientEngine.js?v=scf-proxy"></script>
+  <script src="./js/app.js?v=scf-proxy"></script>
 </body>
 </html>
